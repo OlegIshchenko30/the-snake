@@ -53,7 +53,7 @@ class Snake(GameObject):
         self.body_color = SNAKE_COLOR
         self.head_color = SNAKE_HEAD_COLOR
         self.length = 1
-        self.direction = (1, 0)
+        self.direction = RIGHT
         self.next_direction = None
         self.last = None
 
@@ -87,7 +87,7 @@ class Snake(GameObject):
             self.next_direction = None
 
     def draw(self):
-        """Draw objects on screen."""
+        """Draw objects and border on screen."""
         for position in self.positions[1:]:
             rect = pygame.Rect(position, (GRID_SIZE, GRID_SIZE))
             pygame.draw.rect(screen, self.body_color, rect)
@@ -142,7 +142,7 @@ class Apple(GameObject):
         self.body_color = APPLE_COLOR
 
     def draw(self):
-        """Draw """
+        """Draw apple and border on screen."""
         rect = pygame.Rect(self.position, (GRID_SIZE, GRID_SIZE))
         pygame.draw.rect(screen, self.body_color, rect)
         pygame.draw.rect(screen, self.body_color, rect, 1)
@@ -205,6 +205,7 @@ def main():
         clock.tick(SPEED)
 
         pygame.display.update()
+
 
 if __name__ == "__main__":
     main()

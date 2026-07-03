@@ -169,3 +169,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Local copies / test files
+the_snake_copy.py
+the_snake3.py
