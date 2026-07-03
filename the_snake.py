@@ -21,9 +21,9 @@ APPLE_COLOR = (255, 0, 0)
 
 SNAKE_COLOR = (0, 255, 0)
 
-SNAKE_HEAD_COLOR = (0, 0, 255)
+SPEED = 20
 
-SPEED = 15
+game_speed = SPEED
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), 0, 32)
 
@@ -51,7 +51,6 @@ class Snake(GameObject):
         super().__init__()
         self.positions = [(SCREEN_CENTER_X, SCREEN_CENTER_Y)]
         self.body_color = SNAKE_COLOR
-        self.head_color = SNAKE_HEAD_COLOR
         self.length = 1
         self.direction = RIGHT
         self.next_direction = None
@@ -73,12 +72,8 @@ class Snake(GameObject):
 
         self.last = self.positions[-1]
 
-    def adjust_tail(self):
-        """Adjust tail size."""
         if len(self.positions) > self.length:
             del self.positions[-1]
-        else:
-            self.last = None
 
     def update_direction(self):
         """Update direction after user input."""
@@ -94,7 +89,7 @@ class Snake(GameObject):
             pygame.draw.rect(screen, BOARD_BACKGROUND_COLOR, rect, 1)
 
         head_rect = pygame.Rect(self.positions[0], (GRID_SIZE, GRID_SIZE))
-        pygame.draw.rect(screen, self.head_color, head_rect)
+        pygame.draw.rect(screen, self.body_color, head_rect)
         pygame.draw.rect(screen, BOARD_BACKGROUND_COLOR, head_rect, 1)
 
         if self.last:  # Use this instead of screen.fill()
@@ -164,10 +159,13 @@ class Apple(GameObject):
 
 def handle_keys(game_object):
     """User input keys."""
+    global game_speed
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             raise SystemExit
+
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP and game_object.direction != DOWN:
                 game_object.next_direction = UP
@@ -181,6 +179,11 @@ def handle_keys(game_object):
             elif event.key == pygame.K_RIGHT and game_object.direction != LEFT:
                 game_object.next_direction = RIGHT
                 game_object.update_direction()
+
+            elif event.unicode == '+':
+                game_speed += 2
+            elif event.unicode == '-' and game_speed > 2:
+                game_speed += -2
 
 
 def main():
@@ -198,11 +201,10 @@ def main():
         handle_keys(snake)
         snake.move()
         snake.check_collisions(apple)
-        snake.adjust_tail()
         apple.draw()
         snake.draw()
 
-        clock.tick(SPEED)
+        clock.tick(game_speed)
 
         pygame.display.update()
 
