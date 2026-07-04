@@ -21,13 +21,15 @@ APPLE_COLOR = (255, 0, 0)
 
 SNAKE_COLOR = (0, 255, 0)
 
+SNAKE_HEAD_COLOR = (0, 0, 255)
+
 SPEED = 20
 
 game_speed = SPEED
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), 0, 32)
 
-pygame.display.set_caption("Змейка")
+pygame.display.set_caption('Змейка')
 
 clock = pygame.time.Clock()
 
@@ -51,6 +53,7 @@ class Snake(GameObject):
         super().__init__()
         self.positions = [(SCREEN_CENTER_X, SCREEN_CENTER_Y)]
         self.body_color = SNAKE_COLOR
+        self.head_color = SNAKE_HEAD_COLOR
         self.length = 1
         self.direction = RIGHT
         self.next_direction = None
@@ -72,8 +75,12 @@ class Snake(GameObject):
 
         self.last = self.positions[-1]
 
+    def adjust_tail(self):
+        """Adjust tail size."""
         if len(self.positions) > self.length:
             del self.positions[-1]
+        else:
+            self.last = None
 
     def update_direction(self):
         """Update direction after user input."""
@@ -89,7 +96,7 @@ class Snake(GameObject):
             pygame.draw.rect(screen, BOARD_BACKGROUND_COLOR, rect, 1)
 
         head_rect = pygame.Rect(self.positions[0], (GRID_SIZE, GRID_SIZE))
-        pygame.draw.rect(screen, self.body_color, head_rect)
+        pygame.draw.rect(screen, self.head_color, head_rect)
         pygame.draw.rect(screen, BOARD_BACKGROUND_COLOR, head_rect, 1)
 
         if self.last:  # Use this instead of screen.fill()
@@ -130,9 +137,8 @@ class Snake(GameObject):
 class Apple(GameObject):
     """Create apple class."""
 
-    def __init__(self, snake):
+    def __init__(self):
         super().__init__()
-        self.snake = snake
         self.position = self.randomize_position()
         self.body_color = APPLE_COLOR
 
@@ -144,17 +150,13 @@ class Apple(GameObject):
 
     def randomize_position(self):
         """Create random object position."""
-        while True:
-            random_column_x = randint(0, SCREEN_WIDTH // GRID_SIZE - 1)
-            random_row_y = randint(0, SCREEN_HEIGHT // GRID_SIZE - 1)
+        random_column_x = randint(0, SCREEN_WIDTH // GRID_SIZE - 1)
+        random_row_y = randint(0, SCREEN_HEIGHT // GRID_SIZE - 1)
 
-            random_position_x = random_column_x * GRID_SIZE
-            random_position_y = random_row_y * GRID_SIZE
+        random_position_x = random_column_x * GRID_SIZE
+        random_position_y = random_row_y * GRID_SIZE
 
-            position = (random_position_x, random_position_y)
-
-            if position not in self.snake.positions:
-                return position
+        return random_position_x, random_position_y
 
 
 def handle_keys(game_object):
@@ -192,7 +194,7 @@ def main():
     pygame.init()
     # Тут нужно создать экземпляры классов.
     snake = Snake()
-    apple = Apple(snake)
+    apple = Apple()
 
     while True:
 
@@ -201,6 +203,7 @@ def main():
         handle_keys(snake)
         snake.move()
         snake.check_collisions(apple)
+        snake.adjust_tail()
         apple.draw()
         snake.draw()
 
@@ -209,5 +212,5 @@ def main():
         pygame.display.update()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
