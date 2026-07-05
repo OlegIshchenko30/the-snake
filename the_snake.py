@@ -24,7 +24,7 @@ APPLE_COLOR = (255, 0, 0)
 
 SNAKE_COLOR = (0, 255, 0)
 
-SNAKE_HEAD_COLOR = (0, 0, 255)
+SNAKE_HEAD_COLOR = (0, 255, 0)
 
 SPEED = 20
 
@@ -44,7 +44,7 @@ class GameObject:
         self.position = position
         self.body_color = body_color
 
-    def draw_cell(self, position, color):
+    def draw(self, position, color):
         """Draw one cell of the object on screen."""
         rect = pygame.Rect(position, (GRID_SIZE, GRID_SIZE))
         pygame.draw.rect(screen, color, rect)
@@ -74,19 +74,20 @@ class Snake(GameObject):
 
         if len(self.positions) > self.length:
             self.last = self.positions[-1]
-            self.draw_cell(
-                self.last, BOARD_BACKGROUND_COLOR
-            )  # Reset tail color
+            self.draw_tail()  # Reset tail color
             del self.positions[-1]
+
+    def draw(self):
+        """Draw the head of the snake."""
+        super().draw(self.positions[0], self.body_color)
+
+    def draw_tail(self):
+        """Paint over the tail."""
+        super().draw(self.last, BOARD_BACKGROUND_COLOR)
 
     def update_direction(self, next_direction):
         """Update direction after user input."""
         self.direction = next_direction
-
-    def draw_head(self):
-        """Draw the head of the snake"""
-        head_color = (randint(50, 255), randint(50, 255), randint(50, 255))
-        self.draw_cell(self.positions[0], head_color)
 
     def get_head_position(self):
         """Get head position."""
@@ -102,6 +103,7 @@ class Snake(GameObject):
 
     def reset(self):
         """Restart Game."""
+        reset_screen()
         super().__init__((SCREEN_CENTER_X, SCREEN_CENTER_Y), SNAKE_COLOR)
         self.positions = [self.position]
         self.head_color = SNAKE_HEAD_COLOR
@@ -135,7 +137,7 @@ class Apple(GameObject):
 
     def draw(self):
         """Draw the apple."""
-        self.draw_cell(self.position, self.body_color)
+        super().draw(self.position, self.body_color)
 
 
 def reset_screen():
@@ -208,7 +210,7 @@ def main():
 
         snake.check_self_collision()
 
-        snake.draw_head()
+        snake.draw()
         apple.draw()
 
         clock.tick(game_speed)
