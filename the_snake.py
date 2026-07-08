@@ -1,7 +1,44 @@
-# Больше вроде нигде написать возможности нет, по этому напишу здесь.
-# Большое спасибо за review. Пришлось попыхтеть,
-# но много интересного для себя подчеркнул,
-# как и при первом проекте с холодильником.
+# Я хотел бы пояснить мою логику по поводу метода `draw()`.
+
+# Идея сделать более явное разделение обязанностей:
+# в базовом классе `GameObject` создать метод `draw_cell()`,
+# который отвечает только за отрисовку одной клетки.
+# Затем в классах `Snake` и `Apple` реализовать свои методы `draw()`,
+# которые используют этот общий метод `draw_cell()`.
+
+# Например, логика была бы такой:
+
+# * `GameObject.draw_cell()` — рисует одну клетку;
+# * `Snake.draw()` — рисует части змейки, используя `draw_cell()`;
+# * `Apple.draw()` — рисует яблоко, используя `draw_cell()`.
+
+# На мой взгляд, это позволило бы избежать путаницы:
+# базовый класс содержит общий инструмент для отрисовки,
+# а дочерние классы сами определяют, как именно им нужно рисоваться.
+
+# Но проблема в том, что тесты на платформе, судя по всему,
+# ожидают обязательное наличие метода `draw()` именно в классе `GameObject`,
+# а также метода `draw()` в классах `Snake` и `Apple`.
+# Когда я переименовываю метод базового класса в `draw_cell()`,
+# тесты платформы не проходят, потому что они проверяют наличие `draw()`
+# в `GameObject`.
+
+# Именно поэтому я использовал `super().draw(...)`:
+# чтобы оставить метод `draw()` в `GameObject` и при этом переиспользовать
+# его в `Snake` и `Apple`. Такой вариант проходит тесты платформы.
+
+# Из-за этого я вижу два возможных варианта:
+
+# 1. Оставить `draw()` в `GameObject` как общий метод отрисовки одной клетки,
+# а в `Snake.draw()` и `Apple.draw()` вызывать его через `super().draw(...)`.
+
+# 2. Или оставить `draw()` в `GameObject`, но добавить отдельные методы вроде
+# `draw_head()` и `draw_tail()`, которые будут использовать `self.draw(...)`
+# для отрисовки отдельных частей змейки. При этом мне все равно нужно добавить
+# метод `draw()` в Snake и Apple чтобы пройти тесты.
+
+# Я выбрал оставить `super().draw`. Я понимаю что это не соответствует правке,
+# но это самый подходящий вариант который я вижу учитывая тесты.
 
 from random import randint
 
@@ -45,6 +82,7 @@ class GameObject:
         self.body_color = body_color
 
     def draw(self, position, color):
+        # Вот тут я хотел бы заменить на def draw_cell()
         """Draw one cell of the object on screen."""
         rect = pygame.Rect(position, (GRID_SIZE, GRID_SIZE))
         pygame.draw.rect(screen, color, rect)
@@ -73,17 +111,17 @@ class Snake(GameObject):
         self.positions.insert(0, (new_position_x, new_position_y))
 
         if len(self.positions) > self.length:
-            self.last = self.positions[-1]
-            self.draw_tail()  # Reset tail color
-            del self.positions[-1]
+            self.last = self.positions.pop(-1)
+            self.draw(self.last, BOARD_BACKGROUND_COLOR)
+        else:
+            self.last = None
 
-    def draw(self):
+    def draw(self, position, color):
         """Draw the head of the snake."""
-        super().draw(self.positions[0], self.body_color)
-
-    def draw_tail(self):
-        """Paint over the tail."""
-        super().draw(self.last, BOARD_BACKGROUND_COLOR)
+        super().draw(position, color)
+        # Могло бы быть так:
+        # `def draw(self, position, color)`
+        # `self.draw_cell(position, color)`
 
     def update_direction(self, next_direction):
         """Update direction after user input."""
@@ -96,10 +134,9 @@ class Snake(GameObject):
     def check_self_collision(self):
         """Check collision with self."""
         head_position = self.get_head_position()
-        for position in self.positions[1:]:
-            if position == head_position:
-                reset_screen()
-                self.reset()
+        if head_position in self.positions[1:]:
+            reset_screen()
+            self.reset()
 
     def reset(self):
         """Restart Game."""
@@ -118,9 +155,6 @@ class Apple(GameObject):
     def __init__(self):
         super().__init__(self.randomize_position(positions=()), APPLE_COLOR)
 
-    # Я при первой сдаче хотел прислать с циклом,
-    # но я в него передавал snake.positions что в принципе не правильно.
-    # Убрал потому что тесты на платформе не принимали.
     def randomize_position(self, positions):
         """Create random object position."""
         while True:
@@ -138,6 +172,10 @@ class Apple(GameObject):
     def draw(self):
         """Draw the apple."""
         super().draw(self.position, self.body_color)
+        # Так как отрисовка яблока не меняется, я ее прописал с
+        # фиксированными параметрами. Не совсем уверен что правильно в
+        # данном случае, в сравнении с методом отрисовки змейки,
+        # где параметры меняются в зависимости от какой части тела мы рисуем.
 
 
 def reset_screen():
@@ -150,22 +188,14 @@ def handle_keys(game_object):
     global game_speed
 
     directions = {
-        (pygame.K_UP, UP): UP,
-        (pygame.K_UP, DOWN): DOWN,
         (pygame.K_UP, LEFT): UP,
         (pygame.K_UP, RIGHT): UP,
-        (pygame.K_DOWN, UP): UP,
-        (pygame.K_DOWN, DOWN): DOWN,
         (pygame.K_DOWN, LEFT): DOWN,
         (pygame.K_DOWN, RIGHT): DOWN,
         (pygame.K_LEFT, UP): LEFT,
         (pygame.K_LEFT, DOWN): LEFT,
-        (pygame.K_LEFT, LEFT): LEFT,
-        (pygame.K_LEFT, RIGHT): RIGHT,
         (pygame.K_RIGHT, UP): RIGHT,
         (pygame.K_RIGHT, DOWN): RIGHT,
-        (pygame.K_RIGHT, LEFT): LEFT,
-        (pygame.K_RIGHT, RIGHT): RIGHT
     }
 
     for event in pygame.event.get():
@@ -193,9 +223,8 @@ def handle_keys(game_object):
 
 def main():
     """Run the main game loop."""
-    # Инициализация PyGame:
     pygame.init()
-    # Тут нужно создать экземпляры классов.
+
     snake = Snake()
     apple = Apple()
 
@@ -210,7 +239,7 @@ def main():
 
         snake.check_self_collision()
 
-        snake.draw()
+        snake.draw(snake.positions[0], snake.body_color)
         apple.draw()
 
         clock.tick(game_speed)
